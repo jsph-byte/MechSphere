@@ -1,0 +1,10 @@
+{
+  "name": "MechSphere — Explore. Experiment. Engineer.",
+  "short_name": "MechSphere",
+  "description": "Interactive mechanical engineering learning app: physics simulations, material data, unit conversion, and engineering challenges.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b0f1a",
+  "theme_color": "#0b0f1a",
+  "icons": []
+}
