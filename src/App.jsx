@@ -19,6 +19,18 @@ import SpecificHeat from '@/pages/lab/SpecificHeat';
 import Buoyancy from '@/pages/lab/Buoyancy';
 import BernoulliFlow from '@/pages/lab/BernoulliFlow';
 import HeatConduction from '@/pages/lab/HeatConduction';
+import Collisions from '@/pages/lab/Collisions';
+import OrbitGravity from '@/pages/lab/OrbitGravity';
+import WorkEnergy from '@/pages/lab/WorkEnergy';
+import HookesLaw from '@/pages/lab/HookesLaw';
+import TorqueLevers from '@/pages/lab/TorqueLevers';
+import HydrostaticPressure from '@/pages/lab/HydrostaticPressure';
+import Venturi from '@/pages/lab/Venturi';
+import ThermalExpansion from '@/pages/lab/ThermalExpansion';
+import HeatTransferComparison from '@/pages/lab/HeatTransferComparison';
+import GasProcesses from '@/pages/lab/GasProcesses';
+import OhmsLaw from '@/pages/lab/OhmsLaw';
+import ElectricalPower from '@/pages/lab/ElectricalPower';
 import AssessmentPage from '@/pages/lab/AssessmentPage';
 import MaterialExplorer from '@/pages/MaterialExplorer';
 import Toolkit from '@/pages/Toolkit';
@@ -63,6 +75,18 @@ const AuthenticatedApp = () => {
         <Route path="/lab/buoyancy" element={<Buoyancy />} />
         <Route path="/lab/bernoulli" element={<BernoulliFlow />} />
         <Route path="/lab/conduction" element={<HeatConduction />} />
+        <Route path="/lab/collisions" element={<Collisions />} />
+        <Route path="/lab/orbit" element={<OrbitGravity />} />
+        <Route path="/lab/work-energy" element={<WorkEnergy />} />
+        <Route path="/lab/spring" element={<HookesLaw />} />
+        <Route path="/lab/torque" element={<TorqueLevers />} />
+        <Route path="/lab/hydrostatic" element={<HydrostaticPressure />} />
+        <Route path="/lab/venturi" element={<Venturi />} />
+        <Route path="/lab/expansion" element={<ThermalExpansion />} />
+        <Route path="/lab/heat-transfer" element={<HeatTransferComparison />} />
+        <Route path="/lab/gas-process" element={<GasProcesses />} />
+        <Route path="/lab/ohm" element={<OhmsLaw />} />
+        <Route path="/lab/electrical-power" element={<ElectricalPower />} />
         <Route path="/lab/assessment/:experimentId/:testType" element={<AssessmentPage />} />
         <Route path="/materials" element={<MaterialExplorer />} />
         <Route path="/toolkit" element={<Toolkit />} />

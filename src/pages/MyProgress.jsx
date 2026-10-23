@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Play, Lightbulb, Orbit, Layers, Ruler, Trophy, Check, Lock, AlertTriangle } from "lucide-react";
+import { Play, Lightbulb, Orbit, Layers, Ruler, Trophy, Check, Lock, AlertTriangle, ClipboardCheck, Repeat, TrendingUp, Compass } from "lucide-react";
 import { ACHIEVEMENTS, useProgress } from "@/lib/progress";
+import { ASSESSMENTS } from "@/data/assessments";
 import { TOPICS } from "@/data/questions";
 import { cn } from "@/lib/utils";
 
-const ICONS = { Play, Lightbulb, Orbit, Layers, Ruler, Trophy };
+const ICONS = { Play, Lightbulb, Orbit, Layers, Ruler, Trophy, ClipboardCheck, Repeat, TrendingUp, Compass };
 
 function StatTile({ label, value, sub }) {
   return (
@@ -92,6 +93,71 @@ export default function MyProgress() {
           })}
         </div>
         <p className="mt-3 text-[11px] text-muted-foreground">Achievements unlock only when their conditions are genuinely met — nothing here is pre-earned or fabricated.</p>
+      </section>
+
+      <section className="rounded-xl border border-border bg-card p-5">
+        <h2 className="mb-1 text-xs font-bold uppercase tracking-wider text-muted-foreground">Learning history by experiment</h2>
+        <p className="mb-3 text-[11px] text-muted-foreground">
+          Pre-test and post-test status per experiment — latest score, best score, attempts, and the honest
+          change between your pre-test and post-test. “—” means not taken yet.
+        </p>
+        {Object.entries(ASSESSMENTS).every(([id]) => {
+          const t = progress.assessments?.[id];
+          return !(t?.pre?.latest || t?.post?.latest || progress.experiments?.[id]);
+        }) ? (
+          <p className="text-sm text-muted-foreground">Run an experiment or take a test to start building your learning history.</p>
+        ) : (
+          <div className="space-y-2">
+            {Object.entries(ASSESSMENTS).map(([id, meta]) => {
+              const t = progress.assessments?.[id] || {};
+              const runs = progress.experiments?.[id];
+              if (!(t.pre?.latest || t.post?.latest || runs)) return null;
+              const cell = (type) => {
+                const x = t[type];
+                if (!x?.latest) return <span className="text-muted-foreground">—</span>;
+                return (
+                  <span className="font-mono tabular-nums">
+                    {x.latest.score}/{x.latest.total}
+                    <span className="block text-[10px] text-muted-foreground">
+                      best {x.bestScore} · {(x.attempts || 1)}×
+                    </span>
+                  </span>
+                );
+              };
+              const pre = t.pre?.latest, post = t.post?.latest;
+              const delta = pre && post ? post.score - pre.score : null;
+              return (
+                <div key={id} className="rounded-lg border border-border bg-background px-3 py-2.5">
+                  <div className="grid grid-cols-2 items-center gap-2 sm:grid-cols-[1fr_auto_auto_auto_auto] sm:gap-4 sm:text-sm">
+                    <div className="text-sm font-semibold">{meta.title}</div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {runs ? `${runs.count} run${runs.count === 1 ? "" : "s"}` : "not run"}
+                    </div>
+                    <div className="text-xs">
+                      <span className="mr-1 text-[10px] uppercase text-muted-foreground">pre</span>
+                      {cell("pre")}
+                    </div>
+                    <div className="text-xs">
+                      <span className="mr-1 text-[10px] uppercase text-muted-foreground">post</span>
+                      {cell("post")}
+                    </div>
+                    <div className="text-xs">
+                      {delta === null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : delta > 0 ? (
+                        <span className="font-mono font-semibold text-emerald-400">+{delta}</span>
+                      ) : delta < 0 ? (
+                        <span className="font-mono font-semibold text-destructive">{delta}</span>
+                      ) : (
+                        <span className="font-mono font-semibold text-muted-foreground">±0</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </section>
 
       <section className="rounded-xl border border-border bg-card p-5">

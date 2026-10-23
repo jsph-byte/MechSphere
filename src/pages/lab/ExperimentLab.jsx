@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { Target, Clock, Triangle, Wind, Flame, Waves, Gauge, Thermometer, Cog, Search, ChevronRight } from "lucide-react";
+import { Target, Clock, Triangle, Wind, Flame, Waves, Gauge, Thermometer, Cog, Search, ChevronRight, ArrowLeftRight, Orbit, Zap, ArrowUpDown, Scale, Droplet, Ruler, Layers, Activity, Plug } from "lucide-react";
 import { useProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 
@@ -9,6 +9,7 @@ const CATEGORIES = [
   { id: "fluids", name: "Fluid Mechanics", icon: Waves },
   { id: "thermal", name: "Heat and Thermal Physics", icon: Thermometer },
   { id: "gas", name: "Gas Laws and Thermodynamics", icon: Gauge },
+  { id: "electrical", name: "Electrical Engineering", icon: Zap },
 ];
 
 const EXPERIMENTS = [
@@ -52,15 +53,70 @@ const EXPERIMENTS = [
     title: "Ideal Gas Explorer",
     desc: "Compress, heat, and expand a fixed amount of ideal gas between two states.",
   },
+  {
+    id: "collisions", to: "/lab/collisions", category: "mechanics", icon: ArrowLeftRight, accent: "text-orange-400",
+    title: "Collisions & Momentum",
+    desc: "Elastic or sticky — momentum always balances, kinetic energy only sometimes.",
+  },
+  {
+    id: "orbit", to: "/lab/orbit", category: "mechanics", icon: Orbit, accent: "text-cyan-400",
+    title: "Orbit & Gravity",
+    desc: "Find the exact speed a satellite needs at any altitude — and why ISS astronauts float.",
+  },
+  {
+    id: "work", to: "/lab/work-energy", category: "mechanics", icon: Zap, accent: "text-orange-400",
+    title: "Work, Energy & Power",
+    desc: "Force × distance × the angle between them — and how fast you deliver it.",
+  },
+  {
+    id: "spring", to: "/lab/spring", category: "mechanics", icon: ArrowUpDown, accent: "text-cyan-400",
+    title: "Hooke's Law Springs",
+    desc: "Double the stretch, double the force — and four times the stored energy.",
+  },
+  {
+    id: "torque", to: "/lab/torque", category: "mechanics", icon: Scale, accent: "text-orange-400",
+    title: "Torque & Levers",
+    desc: "Why door handles live far from hinges, and how a lever lifts 60 kg with one hand.",
+  },
+  {
+    id: "hydrostatic", to: "/lab/hydrostatic", category: "fluids", icon: Droplet, accent: "text-cyan-400",
+    title: "Hydrostatic Pressure",
+    desc: "Every metre of depth adds ρgh — the physics behind dams and popping ears.",
+  },
+  {
+    id: "venturi", to: "/lab/venturi", category: "fluids", icon: Wind, accent: "text-cyan-400",
+    title: "Venturi & Continuity",
+    desc: "A flow meter with no moving parts: read the flow speed off a liquid column.",
+  },
+  {
+    id: "expansion", to: "/lab/expansion", category: "thermal", icon: Ruler, accent: "text-orange-400",
+    title: "Thermal Expansion",
+    desc: "2.3 invisible millimetres in a heated rail — enough to buckle a track.",
+  },
+  {
+    id: "heatcompare", to: "/lab/heat-transfer", category: "thermal", icon: Layers, accent: "text-orange-400",
+    title: "Heat Transfer Comparison",
+    desc: "Same geometry, seven materials: a live ranking of what conducts and what insulates.",
+  },
+  {
+    id: "gasprocess", to: "/lab/gas-process", category: "gas", icon: Gauge, accent: "text-cyan-400",
+    title: "Heating & Gas Processes",
+    desc: "Isothermal, isobaric, isochoric, adiabatic — four rulebooks for changing a gas.",
+  },
+  {
+    id: "ohm", to: "/lab/ohm", category: "electrical", icon: Activity, accent: "text-orange-400",
+    title: "Ohm's Law Circuits",
+    desc: "One battery, two resistors: series stacks resistance, parallel splits the current.",
+  },
+  {
+    id: "electricpower", to: "/lab/electrical-power", category: "electrical", icon: Plug, accent: "text-cyan-400",
+    title: "Electrical Power & Energy",
+    desc: "Watts now, kilowatt-hours on the bill — with appliance presets to try.",
+  },
 ];
 
-const PLANNED = [
-  { category: "Mechanics and Motion", titles: ["Collisions & Momentum", "Orbit & Gravity", "Work, Energy & Power", "Hooke's Law Springs", "Torque & Levers"] },
-  { category: "Fluid Mechanics", titles: ["Hydrostatic Pressure", "Venturi & Continuity"] },
-  { category: "Heat and Thermal Physics", titles: ["Thermal Expansion", "Heat Transfer Comparison"] },
-  { category: "Gas Laws and Thermodynamics", titles: ["Heating & Gas Processes"] },
-  { category: "Electrical Engineering", titles: ["Ohm's Law Circuits", "Electrical Power & Energy"] },
-];
+// All previously planned labs are now implemented — the roadmap is complete.
+const PLANNED = [];
 
 export default function ExperimentLab() {
   const [query, setQuery] = useState("");
@@ -75,8 +131,8 @@ export default function ExperimentLab() {
   const badges = (id) => {
     const a = progress.assessments?.[id];
     const chips = [];
-    if (a?.pre?.latest) chips.push(`Pre ${a.pre.latest.score}/15`);
-    if (a?.post?.latest) chips.push(`Post ${a.post.latest.score}/15`);
+    if (a?.pre?.latest) chips.push(`Pre ${a.pre.latest.score}/${a.pre.latest.total}`);
+    if (a?.post?.latest) chips.push(`Post ${a.post.latest.score}/${a.post.latest.total}`);
     return chips;
   };
 

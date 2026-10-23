@@ -218,3 +218,243 @@ export function conduction({ k, length, area, deltaT }) {
   const thermalResistance = length / (k * area);
   return { valid: true, errors: null, rate, heatFlux, thermalResistance };
 }
+
+/**
+ * 1-D two-body collision on a frictionless track.
+ * Elastic (e = 1): v1' = ((m1−m2)u1 + 2m2·u2)/(m1+m2); v2' = ((m2−m1)u2 + 2m1·u1)/(m1+m2)
+ * Perfectly inelastic (stick together): v' = (m1u1 + m2u2)/(m1+m2).
+ * Momentum is always conserved; kinetic energy only in the elastic case.
+ */
+export function collision({ m1, m2, u1, u2, type = "elastic" }) {
+  const errors = {};
+  if (!Number.isFinite(m1) || m1 <= 0) errors.m1 = "Mass 1 must be greater than 0 kg.";
+  if (!Number.isFinite(m2) || m2 <= 0) errors.m2 = "Mass 2 must be greater than 0 kg.";
+  if (!Number.isFinite(u1)) errors.u1 = "Initial speed 1 must be a number (sign = direction).";
+  if (!Number.isFinite(u2)) errors.u2 = "Initial speed 2 must be a number (sign = direction).";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const pTotal = m1 * u1 + m2 * u2;
+  const keInitial = 0.5 * m1 * u1 * u1 + 0.5 * m2 * u2 * u2;
+  if (type === "inelastic") {
+    const v = pTotal / (m1 + m2);
+    const keFinal = 0.5 * (m1 + m2) * v * v;
+    return { valid: true, errors: null, pTotal, keInitial, v1: v, v2: v, keFinal, keLost: keInitial - keFinal };
+  }
+  const v1p = ((m1 - m2) * u1 + 2 * m2 * u2) / (m1 + m2);
+  const v2p = ((m2 - m1) * u2 + 2 * m1 * u1) / (m1 + m2);
+  const keFinal = 0.5 * m1 * v1p * v1p + 0.5 * m2 * v2p * v2p;
+  return { valid: true, errors: null, pTotal, keInitial, v1: v1p, v2: v2p, keFinal, keLost: keInitial - keFinal };
+}
+
+/** Standard gravitational parameters (GM) and mean radii for orbit calculations. */
+export const ORBIT_BODIES = {
+  earth: { name: "Earth", GM: 3.986004418e14, radiusM: 6.371e6 },
+  moon: { name: "Moon", GM: 4.9048695e12, radiusM: 1.7374e6 },
+  mars: { name: "Mars", GM: 4.282837e13, radiusM: 3.3895e6 },
+};
+
+/**
+ * Circular orbit at altitude h above a body: r = R + h.
+ * v = √(GM/r); T = 2π√(r³/GM); local gravity g = GM/r².
+ * A circular orbit is a specific idealized orbit — real orbits can be elliptical.
+ */
+export function orbit({ body = "earth", altitudeKm }) {
+  const errors = {};
+  const b = ORBIT_BODIES[body] || ORBIT_BODIES.earth;
+  if (!Number.isFinite(altitudeKm) || altitudeKm < 0)
+    errors.altitudeKm = "Altitude must be 0 km or greater.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const r = b.radiusM + altitudeKm * 1000;
+  const v = Math.sqrt(b.GM / r);
+  const T = 2 * Math.PI * Math.sqrt((r * r * r) / b.GM);
+  const gLocal = b.GM / (r * r);
+  return { valid: true, errors: null, bodyName: b.name, r, v, T, gLocal };
+}
+
+/**
+ * Work done by a constant force at an angle to the motion: W = F·d·cosθ.
+ * If all that work becomes kinetic energy of a mass starting at rest: v = √(2W/m).
+ * Average power over a chosen duration: P = W/t.
+ */
+export function workEnergy({ force, angleDeg, distance, mass, time }) {
+  const errors = {};
+  if (!Number.isFinite(force) || force < 0) errors.force = "Force magnitude must be 0 or greater.";
+  if (!Number.isFinite(angleDeg)) errors.angleDeg = "Angle must be a number.";
+  if (!Number.isFinite(distance) || distance < 0) errors.distance = "Distance must be 0 or greater.";
+  if (!Number.isFinite(mass) || mass <= 0) errors.mass = "Mass must be greater than 0 kg.";
+  if (!Number.isFinite(time) || time <= 0) errors.time = "Time must be greater than 0 s.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const th = angleDeg * DEG;
+  const work = force * distance * Math.cos(th);
+  const power = work / time;
+  const speedFromWork = Math.sqrt((2 * Math.max(work, 0)) / mass);
+  return { valid: true, errors: null, work, power, speedFromWork };
+}
+
+/**
+ * Hooke's law for a linear spring: F = k·x (x sign: stretch positive).
+ * Stored elastic energy U = ½kx². Mass–spring oscillation: f = (1/2π)·√(k/m), T = 1/f.
+ * Valid while the spring stays within its linear elastic range.
+ */
+export function spring({ k, x, mass }) {
+  const errors = {};
+  if (!Number.isFinite(k) || k <= 0) errors.k = "Spring constant k must be greater than 0 N/m.";
+  if (!Number.isFinite(x)) errors.x = "Extension x must be a number (sign = stretch or compress).";
+  if (!Number.isFinite(mass) || mass <= 0) errors.mass = "Mass must be greater than 0 kg.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const force = k * x;
+  const energy = 0.5 * k * x * x;
+  const freq = Math.sqrt(k / mass) / (2 * Math.PI);
+  return { valid: true, errors: null, force, energy, freq, period: 1 / freq };
+}
+
+/** Torque about a pivot: τ = r·F·sinθ (θ between the lever arm and the force). */
+export function torque({ r, force, angleDeg }) {
+  const errors = {};
+  if (!Number.isFinite(r) || r <= 0) errors.r = "Lever arm must be greater than 0 m.";
+  if (!Number.isFinite(force) || force < 0) errors.force = "Force must be 0 or greater.";
+  if (!Number.isFinite(angleDeg)) errors.angleDeg = "Angle must be a number.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const th = angleDeg * DEG;
+  return { valid: true, errors: null, torque: r * force * Math.sin(th), component: force * Math.sin(th) };
+}
+
+/**
+ * Balanced lever (class-1 seesaw): load·d_load = effort·d_effort about the pivot.
+ * Required effort force F = m·g·d_load/d_effort; mechanical advantage = d_effort/d_load.
+ */
+export function lever({ loadKg, loadArmM, effortArmM, g = G_DEFAULT }) {
+  const errors = {};
+  if (!Number.isFinite(loadKg) || loadKg <= 0) errors.loadKg = "Load must be greater than 0 kg.";
+  if (!Number.isFinite(loadArmM) || loadArmM <= 0) errors.loadArmM = "Load arm must be greater than 0 m.";
+  if (!Number.isFinite(effortArmM) || effortArmM <= 0) errors.effortArmM = "Effort arm must be greater than 0 m.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const loadWeight = loadKg * g;
+  const effortForce = (loadKg * g * loadArmM) / effortArmM;
+  return {
+    valid: true, errors: null, loadWeight, effortForce,
+    mechanicalAdvantage: effortArmM / loadArmM,
+  };
+}
+
+/** Standard atmospheric pressure at sea level. */
+export const P_ATM = 101325;
+
+/**
+ * Hydrostatic pressure in a static fluid: gauge P = ρ·g·h; absolute P = P_atm + ρgh.
+ * Total force on a flat area at that depth: F = gauge P · A (assumes the area's
+ * full surface sits at depth h — an approximation for tall gates).
+ */
+export function hydrostatic({ rho, depth, area, g = G_DEFAULT }) {
+  const errors = {};
+  if (!Number.isFinite(rho) || rho <= 0) errors.rho = "Fluid density must be greater than 0 kg/m³.";
+  if (!Number.isFinite(depth) || depth < 0) errors.depth = "Depth must be 0 m or greater.";
+  if (!Number.isFinite(area) || area <= 0) errors.area = "Area must be greater than 0 m².";
+  if (!Number.isFinite(g) || g <= 0) errors.g = "Gravitational acceleration must be greater than 0 m/s².";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const pGauge = rho * g * depth;
+  return {
+    valid: true, errors: null,
+    pGauge, pAbs: P_ATM + pGauge, force: pGauge * area,
+  };
+}
+
+/**
+ * Linear thermal expansion: ΔL = α·L0·ΔT (α per kelvin, ~room-temperature values).
+ * Isotropic volume expansion: ΔV ≈ 3α·V0·ΔT. Valid for small ΔT, uniform temperature.
+ */
+export function thermalExpansion({ alpha, length0, deltaT, volume0 = 1 }) {
+  const errors = {};
+  if (!Number.isFinite(alpha) || alpha <= 0) errors.alpha = "Expansion coefficient must be greater than 0 1/K.";
+  if (!Number.isFinite(length0) || length0 <= 0) errors.length0 = "Initial length must be greater than 0 m.";
+  if (!Number.isFinite(deltaT)) errors.deltaT = "Temperature change must be a number.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const dL = alpha * length0 * deltaT;
+  return {
+    valid: true, errors: null,
+    dL, newLength: length0 + dL,
+    dV: 3 * alpha * volume0 * deltaT,
+  };
+}
+
+/**
+ * Ideal-gas processes from state 1 (P1, V1, T1 absolute):
+ *   isothermal (Boyle): P1V1 = P2V2, T2 = T1, W = P1V1·ln(V2/V1) — driven by V2
+ *   isobaric (Charles): V ∝ T at fixed P — driven by T2
+ *   isochoric (Gay-Lussac): P ∝ T at fixed V, W = 0 — driven by T2
+ *   adiabatic: P1V1^γ = P2V2^γ, W = (P1V1 − P2V2)/(γ−1) — driven by V2 (γ = 1.4 for air)
+ * Work is done BY the gas (positive = expansion). Ideal-gas model throughout.
+ */
+export function gasProcess({ p1, v1, t1, type = "isothermal", target, gamma = 1.4 }) {
+  const errors = {};
+  if (!Number.isFinite(p1) || p1 <= 0) errors.p1 = "Initial pressure must be greater than 0 kPa.";
+  if (!Number.isFinite(v1) || v1 <= 0) errors.v1 = "Initial volume must be greater than 0 L.";
+  if (!Number.isFinite(t1) || t1 <= 0) errors.t1 = "Initial temperature must be greater than 0 K.";
+  if (!Number.isFinite(target) || target <= 0) errors.target = "The driven final value must be greater than 0.";
+  if (!Number.isFinite(gamma) || gamma <= 1) errors.gamma = "Heat-capacity ratio γ must be greater than 1.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  if (type === "isobaric") {
+    const t2 = target;
+    const v2 = (v1 * t2) / t1;
+    return { valid: true, errors: null, p2: p1, v2, t2, work: p1 * (v2 - v1) };
+  }
+  if (type === "isochoric") {
+    const t2 = target;
+    const p2 = (p1 * t2) / t1;
+    return { valid: true, errors: null, p2, v2: v1, t2, work: 0 };
+  }
+  if (type === "adiabatic") {
+    const v2 = target;
+    const p2 = p1 * Math.pow(v1 / v2, gamma);
+    const t2 = t1 * Math.pow(v1 / v2, gamma - 1);
+    return { valid: true, errors: null, p2, v2, t2, work: (p1 * v1 - p2 * v2) / (gamma - 1) };
+  }
+  const v2 = target;
+  const p2 = (p1 * v1) / v2;
+  return { valid: true, errors: null, p2, v2, t2: t1, work: p1 * v1 * Math.log(v2 / v1) };
+}
+
+/**
+ * Series or parallel two-resistor DC circuit (ideal):
+ * series R = R1+R2 (same current); parallel R = R1R2/(R1+R2) (same voltage).
+ * I = V/R; power P = V·I; per-resistor power as I²R (series) or V²/R (parallel).
+ */
+export function circuit({ voltage, r1, r2, mode = "series" }) {
+  const errors = {};
+  if (!Number.isFinite(voltage) || voltage <= 0) errors.voltage = "Voltage must be greater than 0 V.";
+  if (!Number.isFinite(r1) || r1 <= 0) errors.r1 = "Resistance 1 must be greater than 0 Ω.";
+  if (!Number.isFinite(r2) || r2 <= 0) errors.r2 = "Resistance 2 must be greater than 0 Ω.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const series = mode !== "parallel";
+  const rTotal = series ? r1 + r2 : (r1 * r2) / (r1 + r2);
+  const current = voltage / rTotal;
+  const p1 = series ? current * current * r1 : (voltage * voltage) / r1;
+  const p2 = series ? current * current * r2 : (voltage * voltage) / r2;
+  return { valid: true, errors: null, rTotal, current, totalPower: voltage * current, p1, p2 };
+}
+
+/**
+ * Electrical energy and cost: P = V·I; E (kWh) = P (kW) × hours; cost = E × rate.
+ * Uses the stated constant power over the whole duration (no duty cycling).
+ */
+export function electricEnergy({ voltage, current, hours, ratePerKwh }) {
+  const errors = {};
+  if (!Number.isFinite(voltage) || voltage <= 0) errors.voltage = "Voltage must be greater than 0 V.";
+  if (!Number.isFinite(current) || current <= 0) errors.current = "Current must be greater than 0 A.";
+  if (!Number.isFinite(hours) || hours <= 0) errors.hours = "Hours must be greater than 0.";
+  if (!Number.isFinite(ratePerKwh) || ratePerKwh < 0) errors.ratePerKwh = "Rate must be 0 or greater.";
+  if (Object.keys(errors).length) return { valid: false, errors };
+
+  const powerW = voltage * current;
+  const energyKwh = (powerW / 1000) * hours;
+  return { valid: true, errors: null, powerW, energyKwh, cost: energyKwh * ratePerKwh };
+}

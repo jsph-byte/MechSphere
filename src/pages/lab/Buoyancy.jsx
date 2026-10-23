@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import ExperimentShell, { Stat, ErrorList } from "@/components/experiments/ExperimentShell";
 import ControlSlider from "@/components/experiments/ControlSlider";
 import BuoyancyViz from "@/components/experiments/BuoyancyViz";
-import AssessmentPanel from "@/components/assessments/AssessmentPanel";
+import { preTest as buoyancyPre, postTest as buoyancyPost } from "@/data/assessments/buoyancy";
 import { buoyancy } from "@/lib/physics";
 import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart";
 import { fmt } from "@/lib/format";
@@ -68,20 +68,26 @@ export default function Buoyancy() {
       predict={{
         experimentId: "buoyancy",
         label: "Buoyancy Lab",
-        question: "An object floats in fresh water. You move it into sea water, which is slightly denser. While it keeps floating, the buoyant force on it…",
-        options: ["Increases", "Decreases", "Stays the same", "Becomes zero"],
-        correctIndex: 2,
-        explanation:
-          "A floating object always displaces exactly its own weight of fluid, so F_b = W in both fluids — unchanged. The denser sea water only reduces the submerged fraction, so the object rides slightly higher.",
-        computeComparison: () => {
-          const ro = s.objectDensity;
-          return {
-            beforeLabel: "In fresh water (1000 kg/m³)",
-            before: `${fmt(Math.min(1, ro / 1000) * 100)}% submerged`,
-            afterLabel: "In sea water (1025 kg/m³)",
-            after: `${fmt(Math.min(1, ro / 1025) * 100)}% submerged`,
-          };
-        },
+        pre: [
+          {
+            question: "An object floats in fresh water. You move it into sea water, which is slightly denser. While it keeps floating, the buoyant force on it…",
+            options: ["Increases", "Decreases", "Stays the same", "Becomes zero"],
+            correctIndex: 2,
+            explanation:
+              "A floating object always displaces exactly its own weight of fluid, so F_b = W in both fluids — unchanged. The denser sea water only reduces the submerged fraction, so the object rides slightly higher.",
+            computeComparison: () => {
+              const ro = s.objectDensity;
+              return {
+                beforeLabel: "In fresh water (1000 kg/m³)",
+                before: `${fmt(Math.min(1, ro / 1000) * 100)}% submerged`,
+                afterLabel: "In sea water (1025 kg/m³)",
+                after: `${fmt(Math.min(1, ro / 1025) * 100)}% submerged`,
+              };
+            },
+          },
+          ...buoyancyPre,
+        ],
+        post: buoyancyPost,
       }}
     >
       <div className="rounded-xl border border-border bg-card p-5">
@@ -138,7 +144,6 @@ export default function Buoyancy() {
         series={[{ key: "frac", name: "Submerged fraction (%)", color: "#22d3ee" }]}
       />
 
-      <AssessmentPanel experimentId="buoyancy" />
     </ExperimentShell>
   );
 }

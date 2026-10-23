@@ -4,6 +4,7 @@ import ControlSlider from "@/components/experiments/ControlSlider";
 import ThermometerViz from "@/components/experiments/ThermometerViz";
 import { specificHeat } from "@/lib/physics";
 import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart";
+import { PREDICTIONS } from "@/data/predictions";
 import { fmt } from "@/lib/format";
 import { useProgress } from "@/lib/progress";
 import { MATERIALS } from "@/data/materials";
@@ -67,19 +68,25 @@ export default function SpecificHeat() {
       predict={{
         experimentId: "heat",
         label: "Specific Heat",
-        question: "You add the same heat energy to equal masses of water and copper. Which warms up more?",
-        options: ["Water warms more", "Copper warms more", "Both warm equally"],
-        correctIndex: 1,
-        explanation: "ΔT = Q/(mc). Copper's specific heat (385 J/(kg·K)) is about 11× smaller than water's (4186), so the same energy produces about 11× the temperature rise.",
-        computeComparison: () => {
-          const q = s.q * 1000;
-          const dTw = q / (s.mass * 4186);
-          const dTc = q / (s.mass * 385);
-          return {
-            beforeLabel: `Water: c = 4186 J/(kg·K)`, before: `ΔT = ${fmt(dTw)} K`,
-            afterLabel: `Copper: c = 385 J/(kg·K)`, after: `ΔT = ${fmt(dTc)} K`,
-          };
-        },
+        pre: [
+          {
+            question: "You add the same heat energy to equal masses of water and copper. Which warms up more?",
+            options: ["Water warms more", "Copper warms more", "Both warm equally"],
+            correctIndex: 1,
+            explanation: "ΔT = Q/(mc). Copper's specific heat (385 J/(kg·K)) is about 11× smaller than water's (4186), so the same energy produces about 11× the temperature rise.",
+            computeComparison: () => {
+              const q = s.q * 1000;
+              const dTw = q / (s.mass * 4186);
+              const dTc = q / (s.mass * 385);
+              return {
+                beforeLabel: `Water: c = 4186 J/(kg·K)`, before: `ΔT = ${fmt(dTw)} K`,
+                afterLabel: `Copper: c = 385 J/(kg·K)`, after: `ΔT = ${fmt(dTc)} K`,
+              };
+            },
+          },
+          ...PREDICTIONS.heat.pre,
+        ],
+        post: PREDICTIONS.heat.post,
       }}
     >
       <div className="grid gap-4 lg:grid-cols-[1fr_240px]">

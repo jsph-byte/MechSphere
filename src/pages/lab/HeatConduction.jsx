@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import ExperimentShell, { Stat, ErrorList } from "@/components/experiments/ExperimentShell";
 import ControlSlider from "@/components/experiments/ControlSlider";
 import ConductionViz from "@/components/experiments/ConductionViz";
-import AssessmentPanel from "@/components/assessments/AssessmentPanel";
+import { preTest as conductionPre, postTest as conductionPost } from "@/data/assessments/conduction";
 import { conduction } from "@/lib/physics";
 import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart";
 import { fmt } from "@/lib/format";
@@ -81,21 +81,27 @@ export default function HeatConduction() {
       predict={{
         experimentId: "conduction",
         label: "Heat Conduction Lab",
-        question: "You double the sample's thickness while keeping k, A, and ΔT the same. The steady-state heat-transfer rate will…",
-        options: ["Double", "Halve", "Stay the same", "Become zero"],
-        correctIndex: 1,
-        explanation:
-          "q = kAΔT/L is inversely proportional to the thickness L: twice the thickness means twice the distance each unit of heat must be conducted through, halving the rate.",
-        computeComparison: () => {
-          const base = (s.k * s.area * (s.thot - s.tcold)) / s.length;
-          const doubled = (s.k * s.area * (s.thot - s.tcold)) / (2 * s.length);
-          return {
-            beforeLabel: `Current thickness L = ${fmt(s.length)} m`,
-            before: `q = ${fmt(base)} W`,
-            afterLabel: "Doubled thickness 2L",
-            after: `q = ${fmt(doubled)} W`,
-          };
-        },
+        pre: [
+          {
+            question: "You double the sample's thickness while keeping k, A, and ΔT the same. The steady-state heat-transfer rate will…",
+            options: ["Double", "Halve", "Stay the same", "Become zero"],
+            correctIndex: 1,
+            explanation:
+              "q = kAΔT/L is inversely proportional to the thickness L: twice the thickness means twice the distance each unit of heat must be conducted through, halving the rate.",
+            computeComparison: () => {
+              const base = (s.k * s.area * (s.thot - s.tcold)) / s.length;
+              const doubled = (s.k * s.area * (s.thot - s.tcold)) / (2 * s.length);
+              return {
+                beforeLabel: `Current thickness L = ${fmt(s.length)} m`,
+                before: `q = ${fmt(base)} W`,
+                afterLabel: "Doubled thickness 2L",
+                after: `q = ${fmt(doubled)} W`,
+              };
+            },
+          },
+          ...conductionPre,
+        ],
+        post: conductionPost,
       }}
     >
       <div className="rounded-xl border border-border bg-card p-5">
@@ -156,7 +162,6 @@ export default function HeatConduction() {
         series={[{ key: "q", name: "Heat rate q (W)", color: "#f97316" }]}
       />
 
-      <AssessmentPanel experimentId="conduction" />
     </ExperimentShell>
   );
 }

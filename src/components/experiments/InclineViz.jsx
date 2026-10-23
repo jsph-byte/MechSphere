@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { Play, Pause } from "lucide-react";
 import { fmt } from "@/lib/format";
 
-/** Inclined plane with force vectors. Sign convention: down the plane = positive. */
-export default function InclineViz({ angleDeg, res, onPlayStarted }) {
+/** Inclined plane with force vectors. Sign convention: down the plane = positive.
+ *  autoLoop: used by the floating mini-player — start on mount. */
+export default function InclineViz({ angleDeg, res, onPlayStarted, autoLoop = false }) {
   const [playing, setPlaying] = useState(false);
   const [t, setT] = useState(0);
   const tRef = useRef(0);
@@ -23,6 +24,10 @@ export default function InclineViz({ angleDeg, res, onPlayStarted }) {
     id = requestAnimationFrame(step);
     return () => cancelAnimationFrame(id);
   }, [playing, res?.valid, res?.sliding]);
+
+  useEffect(() => {
+    if (autoLoop && res?.valid && res.sliding) setPlaying(true);
+  }, [autoLoop, res?.valid, res?.sliding]);
 
   if (!res?.valid) {
     return (

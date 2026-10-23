@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from "react";
-import { ArrowLeftRight, Copy, Check, Search, Equal, X, History } from "lucide-react";
+import { ArrowLeftRight, Copy, Check, Search, X, History } from "lucide-react";
+import EquationChecker from "@/components/toolkit/EquationChecker";
+import QuantityComparison from "@/components/toolkit/QuantityComparison";
 import { UNIT_CATEGORIES, convert } from "@/lib/units";
 import { fmt, todayIndex } from "@/lib/format";
 import { CONSTANTS } from "@/data/constants";
@@ -142,62 +144,7 @@ function Converter() {
   );
 }
 
-// ---------- Dimensional Consistency Helper ----------
-const QUANTITIES = [
-  { id: "length", label: "Length", dims: "L", parts: [1, 0, 0, 0] },
-  { id: "mass", label: "Mass", dims: "M", parts: [0, 1, 0, 0] },
-  { id: "time", label: "Time", dims: "T", parts: [0, 0, 1, 0] },
-  { id: "velocity", label: "Velocity", dims: "L·T⁻¹", parts: [1, 0, -1, 0] },
-  { id: "acceleration", label: "Acceleration", dims: "L·T⁻²", parts: [1, 0, -2, 0] },
-  { id: "force", label: "Force", dims: "M·L·T⁻²", parts: [1, 1, -2, 0] },
-  { id: "pressure", label: "Pressure", dims: "M·L⁻¹·T⁻²", parts: [-1, 1, -2, 0] },
-  { id: "energy", label: "Energy", dims: "M·L²·T⁻²", parts: [2, 1, -2, 0] },
-  { id: "power", label: "Power", dims: "M·L²·T⁻³", parts: [2, 1, -3, 0] },
-  { id: "density", label: "Density", dims: "M·L⁻³", parts: [-3, 1, 0, 0] },
-  { id: "temperature", label: "Temperature", dims: "Θ", parts: [0, 0, 0, 1] },
-  { id: "specificHeat", label: "Specific heat capacity", dims: "L²·T⁻²·Θ⁻¹", parts: [2, 0, -2, -1] },
-];
 
-function DimensionHelper() {
-  const [a, setA] = useState("force");
-  const [b, setB] = useState("temperature");
-  const qa = QUANTITIES.find((q) => q.id === a);
-  const qb = QUANTITIES.find((q) => q.id === b);
-  const compatible = qa.parts.every((v, i) => v === qb.parts[i]);
-
-  return (
-    <div className="space-y-4">
-      <div className="rounded-xl border border-border bg-card p-5">
-        <div className="grid gap-3 sm:grid-cols-[1fr_auto_1fr] sm:items-end">
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-muted-foreground">Quantity A</span>
-            <select value={a} onChange={(e) => setA(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-              {QUANTITIES.map((q) => <option key={q.id} value={q.id}>{q.label} [{q.dims}]</option>)}
-            </select>
-          </label>
-          <div className="hidden pb-2.5 text-center font-mono text-lg text-muted-foreground sm:block">+</div>
-          <label className="block">
-            <span className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-muted-foreground">Quantity B</span>
-            <select value={b} onChange={(e) => setB(e.target.value)} className="w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-              {QUANTITIES.map((q) => <option key={q.id} value={q.id}>{q.label} [{q.dims}]</option>)}
-            </select>
-          </label>
-        </div>
-        <div className={cn("mt-4 flex items-start gap-2 rounded-lg border p-3.5 text-sm font-medium", compatible ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-400" : "border-destructive/40 bg-destructive/10 text-destructive")}>
-          {compatible ? <Equal className="mt-0.5 h-4 w-4 shrink-0" /> : <X className="mt-0.5 h-4 w-4 shrink-0" />}
-          {compatible ? (
-            <span>Dimensionally consistent — {qa.label} [{qa.dims}] and {qb.label} [{qb.dims}] share the same dimensions, so they can be added, subtracted, or compared directly.</span>
-          ) : (
-            <span>Dimensionally incompatible — {qa.label} [{qa.dims}] and {qb.label} [{qb.dims}] have different physical dimensions. Adding a force to a temperature is meaningless; any equation equating them is wrong.</span>
-          )}
-        </div>
-      </div>
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
-        <strong className="text-foreground">Limits of this checker:</strong> it compares a fixed list of predefined quantities only. It does not perform symbolic dimensional analysis of arbitrary expressions (products, quotients, or derived combinations). For example, it can verify that force and temperature cannot be added, but it cannot simplify m·a into M·L·T⁻² for you.
-      </p>
-    </div>
-  );
-}
 
 // ---------- Constants reference ----------
 function Constants() {
@@ -239,14 +186,15 @@ export default function Toolkit() {
   const [tab, setTab] = useState("converter");
   const tabs = [
     { id: "converter", label: "Unit Converter" },
-    { id: "dimensions", label: "Dimension Checker" },
+    { id: "equation", label: "Equation Checker" },
+    { id: "quantity", label: "Quantity Comparison" },
     { id: "constants", label: "Constants" },
   ];
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-heading text-2xl font-bold tracking-tight md:text-3xl">Engineering Toolkit</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Verified conversion factors, a dimensional consistency check, and a referenced constants library.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Verified conversion factors, a dimensional equation checker, and a referenced constants library.</p>
       </div>
       <div className="flex flex-wrap gap-2">
         {tabs.map((t) => (
@@ -258,7 +206,8 @@ export default function Toolkit() {
         ))}
       </div>
       {tab === "converter" && <Converter />}
-      {tab === "dimensions" && <DimensionHelper />}
+      {tab === "equation" && <EquationChecker />}
+      {tab === "quantity" && <QuantityComparison />}
       {tab === "constants" && <Constants />}
     </div>
   );

@@ -1,17 +1,22 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import { RotateCcw, ChevronLeft, Info } from "lucide-react";
-import PredictFirst from "@/components/experiments/PredictFirst";
+import { RotateCcw, ChevronLeft, Info, ClipboardCheck } from "lucide-react";
+import AssessmentPanel from "@/components/assessments/AssessmentPanel";
+import { useProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 
 /**
  * Shared experiment page scaffold:
- * title/intro → assumptions → visualization + controls + results (children)
- * → explanation → Predict First → reset.
+ * title/intro → PRE-TEST predictions (above everything) → assumptions →
+ * visualization + controls + results (children) → explanation → POST-TEST.
+ * predict: { experimentId, label, pre: [...questions], post: [...questions] }
  */
 export default function ExperimentShell({
   title, tagline, intro, assumptions, children, explanation, predict, onReset, backLabel = "All experiments",
 }) {
+  const { progress } = useProgress();
+  const hasTest = !!predict?.experimentId;
+  const preDone = !!(hasTest && progress.assessments?.[predict.experimentId]?.pre?.latest);
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-3">
@@ -32,6 +37,24 @@ export default function ExperimentShell({
 
       <p className="max-w-3xl text-sm leading-relaxed text-muted-foreground">{intro}</p>
 
+      {hasTest && !preDone && (
+        <Link
+          to={`/lab/assessment/${predict.experimentId}/pre`}
+          className="flex items-center justify-between gap-3 rounded-xl border border-orange-500/30 bg-orange-500/[0.07] px-4 py-3 transition-colors hover:border-orange-500/60"
+        >
+          <div className="flex items-center gap-2.5">
+            <ClipboardCheck className="h-5 w-5 shrink-0 text-orange-400" />
+            <div>
+              <div className="text-sm font-semibold">Start with the 15-question pre-test</div>
+              <div className="text-xs text-muted-foreground">
+                Commit to your predictions before you experiment — your score never blocks the simulation.
+              </div>
+            </div>
+          </div>
+          <span className="shrink-0 text-xs font-bold text-orange-400">Take pre-test →</span>
+        </Link>
+      )}
+
       <Assumptions assumptions={assumptions} />
 
       {children}
@@ -43,7 +66,7 @@ export default function ExperimentShell({
         {explanation}
       </section>
 
-      {predict && <PredictFirst {...predict} />}
+      {hasTest && <AssessmentPanel experimentId={predict.experimentId} />}
     </div>
   );
 }

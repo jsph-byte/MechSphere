@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ChevronLeft, ChevronRight, AlertTriangle, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertTriangle, RotateCcw, ListChecks, Check, Minus } from "lucide-react";
 import { useProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 
@@ -11,9 +11,9 @@ export const SECTION_LABELS = {
 
 /**
  * One-question-per-screen assessment runner.
- * Four options, Previous/Next, autosaved draft (resumable), confirmation
- * before submitting incomplete work, and NO correct answers or
- * explanations revealed before submission.
+ * Four options, Previous/Next, autosaved draft (resumable), a review screen
+ * that marks unanswered questions, confirmation before submitting incomplete
+ * work, and NO correct answers or explanations revealed before submission.
  */
 export default function AssessmentRunner({ experimentId, testType, questions, onFinish }) {
   const { progress, saveAssessmentDraft, clearAssessmentDraft } = useProgress();
@@ -30,6 +30,7 @@ export default function AssessmentRunner({ experimentId, testType, questions, on
     const firstEmpty = saved.findIndex((a) => a === null || a === undefined);
     return firstEmpty === -1 ? total - 1 : firstEmpty;
   });
+  const [reviewing, setReviewing] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
   const answeredCount = answers.filter((a) => a !== null).length;
@@ -45,6 +46,10 @@ export default function AssessmentRunner({ experimentId, testType, questions, on
   useEffect(() => {
     const onKey = (e) => {
       if (confirming) return;
+      if (reviewing) {
+        if (e.key === "Escape") setReviewing(false);
+        return;
+      }
       if (["1", "2", "3", "4"].includes(e.key)) updateAnswers(index, Number(e.key) - 1);
       else if (e.key === "ArrowRight" && index < total - 1) setIndex(index + 1);
       else if (e.key === "ArrowLeft" && index > 0) setIndex(index - 1);
@@ -69,10 +74,16 @@ export default function AssessmentRunner({ experimentId, testType, questions, on
     onFinish({ answers: answers.slice(), score, total, pct: (100 * score) / total, sections, at: Date.now() });
   };
 
+  const requestSubmit = () => {
+    if (answeredCount < total) setConfirming(true);
+    else finalize();
+  };
+
   const startOver = () => {
     setAnswers(Array(total).fill(null));
     setIndex(0);
     setResumed(false);
+    setReviewing(false);
     clearAssessmentDraft(experimentId, testType);
   };
 
@@ -80,7 +91,7 @@ export default function AssessmentRunner({ experimentId, testType, questions, on
 
   return (
     <div className="space-y-4">
-      {resumed && (
+      {resumed && !reviewing && (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-orange-500/30 bg-orange-500/5 px-4 py-3 text-xs">
           <span className="font-medium text-orange-300">
             Resumed your saved progress — {answeredCount} of {total} answered.
@@ -97,7 +108,7 @@ export default function AssessmentRunner({ experimentId, testType, questions, on
       <div>
         <div className="mb-1.5 flex items-center justify-between text-xs font-semibold">
           <span className="font-heading uppercase tracking-wider text-muted-foreground">
-            Question {index + 1} of {total}
+            {reviewing ? "Review your answers" : `Question ${index + 1} of ${total}`}
           </span>
           <span className="font-mono text-muted-foreground">
             {answeredCount}/{total} answered
@@ -108,65 +119,122 @@ export default function AssessmentRunner({ experimentId, testType, questions, on
         </div>
       </div>
 
-      <div className="rounded-xl border border-border bg-card p-5">
-        <div className="mb-2 inline-block rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400">
-          {SECTION_LABELS[q.section] || q.section}
+      {reviewing ? (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <p className="mb-3 text-xs leading-relaxed text-muted-foreground">
+            Every question is listed below. Unanswered questions are marked in orange — tap any question to go
+            back to it, then return here and submit.
+          </p>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {questions.map((qq, i) => {
+              const given = answers[i];
+              const unanswered = given === null || given === undefined;
+              return (
+                <button
+                  key={i}
+                  onClick={() => { setIndex(i); setReviewing(false); }}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg border px-3 py-2.5 text-left text-xs font-medium transition-colors",
+                    unanswered
+                      ? "border-orange-500/50 bg-orange-500/10 text-orange-300 hover:border-orange-500"
+                      : "border-border bg-background text-foreground hover:border-ring"
+                  )}
+                >
+                  {unanswered ? <Minus className="h-3.5 w-3.5 shrink-0 text-orange-400" /> : <Check className="h-3.5 w-3.5 shrink-0 text-emerald-400" />}
+                  <span className="truncate">
+                    Q{i + 1}: {unanswered ? "unanswered" : `"${qq.options[given]}"`}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <p className="text-base font-medium leading-relaxed md:text-lg">{q.question}</p>
-        <div className="mt-4 grid gap-2">
-          {q.options.map((opt, i) => (
-            <button
-              key={i}
-              onClick={() => updateAnswers(index, i)}
-              aria-pressed={answers[index] === i}
-              className={cn(
-                "flex items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
-                answers[index] === i
-                  ? "border-orange-500 bg-orange-500/15 text-orange-300"
-                  : "border-border bg-background text-foreground hover:border-ring"
-              )}
-            >
-              <span
+      ) : (
+        <div className="rounded-xl border border-border bg-card p-5">
+          <div className="mb-2 inline-block rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-cyan-400">
+            {SECTION_LABELS[q.section] || q.section}
+          </div>
+          <p className="text-base font-medium leading-relaxed md:text-lg">{q.question}</p>
+          <div className="mt-4 grid gap-2">
+            {q.options.map((opt, i) => (
+              <button
+                key={i}
+                onClick={() => updateAnswers(index, i)}
+                aria-pressed={answers[index] === i}
                 className={cn(
-                  "hidden h-6 w-6 shrink-0 items-center justify-center rounded-md border font-mono text-xs sm:inline-flex",
-                  answers[index] === i ? "border-orange-500/50 text-orange-300" : "border-border text-muted-foreground"
+                  "flex items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-ring",
+                  answers[index] === i
+                    ? "border-orange-500 bg-orange-500/15 text-orange-300"
+                    : "border-border bg-background text-foreground hover:border-ring"
                 )}
               >
-                {i + 1}
-              </span>
-              {opt}
-            </button>
-          ))}
+                <span
+                  className={cn(
+                    "hidden h-6 w-6 shrink-0 items-center justify-center rounded-md border font-mono text-xs sm:inline-flex",
+                    answers[index] === i ? "border-orange-500/50 text-orange-300" : "border-border text-muted-foreground"
+                  )}
+                >
+                  {i + 1}
+                </span>
+                {opt}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 hidden text-[11px] text-muted-foreground sm:block">
+            Keyboard: press <span className="font-mono">1–4</span> to answer, <span className="font-mono">←</span>/<span className="font-mono">→</span> to move between questions.
+          </p>
         </div>
-        <p className="mt-3 hidden text-[11px] text-muted-foreground sm:block">
-          Keyboard: press <span className="font-mono">1–4</span> to answer, <span className="font-mono">←</span>/<span className="font-mono">→</span> to move between questions.
-        </p>
-      </div>
+      )}
 
-      <div className="flex items-center justify-between">
-        <button
-          onClick={() => setIndex((i) => Math.max(0, i - 1))}
-          disabled={index === 0}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
-        >
-          <ChevronLeft className="h-4 w-4" /> Previous
-        </button>
-        {index < total - 1 ? (
+      {reviewing ? (
+        <div className="flex items-center justify-between gap-2">
           <button
-            onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            onClick={() => setReviewing(false)}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-ring hover:text-foreground"
           >
-            Next <ChevronRight className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" /> Back to questions
           </button>
-        ) : (
           <button
-            onClick={() => (answeredCount < total ? setConfirming(true) : finalize())}
-            className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white"
+            onClick={requestSubmit}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white hover:bg-orange-600"
           >
             Submit test
           </button>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => setIndex((i) => Math.max(0, i - 1))}
+            disabled={index === 0}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-muted-foreground transition-colors hover:border-ring hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <ChevronLeft className="h-4 w-4" /> Previous
+          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setReviewing(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-cyan-500/40 bg-cyan-500/10 px-4 py-2 text-sm font-semibold text-cyan-300 transition-colors hover:bg-cyan-500/20"
+            >
+              <ListChecks className="h-4 w-4" /> Review
+            </button>
+            {index < total - 1 ? (
+              <button
+                onClick={() => setIndex((i) => Math.min(total - 1, i + 1))}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+              >
+                Next <ChevronRight className="h-4 w-4" />
+              </button>
+            ) : (
+              <button
+                onClick={() => setReviewing(true)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-orange-500 px-4 py-2 text-sm font-semibold text-white"
+              >
+                Review &amp; submit
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       {confirming && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4">
@@ -177,7 +245,7 @@ export default function AssessmentRunner({ experimentId, testType, questions, on
                 <h3 className="font-heading text-sm font-bold">Submit with unanswered questions?</h3>
                 <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                   You still have {total - answeredCount} unanswered question{total - answeredCount === 1 ? "" : "s"}. Unanswered questions are
-                  counted as incorrect and highlighted in your review.
+                  counted as incorrect and highlighted in your results.
                 </p>
               </div>
             </div>

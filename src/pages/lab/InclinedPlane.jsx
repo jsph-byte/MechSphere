@@ -4,6 +4,8 @@ import ControlSlider from "@/components/experiments/ControlSlider";
 import InclineViz from "@/components/experiments/InclineViz";
 import { incline } from "@/lib/physics";
 import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart";
+import SimPlayer from "@/components/experiments/SimPlayer";
+import { PREDICTIONS } from "@/data/predictions";
 import { fmt } from "@/lib/format";
 import { useProgress } from "@/lib/progress";
 
@@ -11,6 +13,7 @@ const DEFAULTS = { angleDeg: 30, mass: 10, mu: 0.2 };
 
 export default function InclinedPlane() {
   const [s, setS] = useState(DEFAULTS);
+  const [pip, setPip] = useState(false);
   const { recordExperiment } = useProgress();
   const res = incline(s);
   const set = (k) => (v) => setS((p) => ({ ...p, [k]: v }));
@@ -44,22 +47,39 @@ export default function InclinedPlane() {
       predict={{
         experimentId: "incline",
         label: "Inclined Plane",
-        question: "If you increase the incline angle (block still sliding), what happens to the normal force N = mg·cos θ?",
-        options: ["It increases", "It stays the same", "It decreases"],
-        correctIndex: 2,
-        explanation: "cos θ shrinks as the ramp steepens, so both the normal force and kinetic friction μk·N decrease. On a vertical wall (θ → 90°) the normal force would vanish entirely.",
-        computeComparison: () => {
-          const a = incline(s);
-          const newAngle = Math.min(85, s.angleDeg + 20);
-          const b = incline({ ...s, angleDeg: newAngle });
-          return {
-            beforeLabel: `Current: θ = ${fmt(s.angleDeg, 3)}°`, before: `N = ${fmt(a.normal)} N`,
-            afterLabel: `Steeper: θ = ${fmt(newAngle, 3)}°`, after: `N = ${fmt(b.normal)} N`,
-          };
-        },
+        pre: [
+          {
+            question: "If you increase the incline angle (block still sliding), what happens to the normal force N = mg·cos θ?",
+            options: ["It increases", "It stays the same", "It decreases"],
+            correctIndex: 2,
+            explanation: "cos θ shrinks as the ramp steepens, so both the normal force and kinetic friction μk·N decrease. On a vertical wall (θ → 90°) the normal force would vanish entirely.",
+            computeComparison: () => {
+              const a = incline(s);
+              const newAngle = Math.min(85, s.angleDeg + 20);
+              const b = incline({ ...s, angleDeg: newAngle });
+              return {
+                beforeLabel: `Current: θ = ${fmt(s.angleDeg, 3)}°`, before: `N = ${fmt(a.normal)} N`,
+                afterLabel: `Steeper: θ = ${fmt(newAngle, 3)}°`, after: `N = ${fmt(b.normal)} N`,
+              };
+            },
+          },
+          ...PREDICTIONS.incline.pre,
+        ],
+        post: PREDICTIONS.incline.post,
       }}
     >
-      <InclineViz angleDeg={s.angleDeg} res={res} onPlayStarted={() => recordExperiment("incline", "Ran Inclined Plane")} />
+      <SimPlayer
+        title="Inclined plane"
+        playing={pip && res.valid && res.sliding}
+        onDismiss={() => setPip(false)}
+        mini={<InclineViz angleDeg={s.angleDeg} res={res} autoLoop />}
+      >
+        <InclineViz
+          angleDeg={s.angleDeg}
+          res={res}
+          onPlayStarted={() => { recordExperiment("incline", "Ran Inclined Plane"); setPip(true); }}
+        />
+      </SimPlayer>
 
       <ErrorList errors={res.errors} />
 

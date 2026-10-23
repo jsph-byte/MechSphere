@@ -4,6 +4,8 @@ import ControlSlider from "@/components/experiments/ControlSlider";
 import TrajectoryViz from "@/components/experiments/TrajectoryViz";
 import { projectile } from "@/lib/physics";
 import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart";
+import SimPlayer from "@/components/experiments/SimPlayer";
+import { PREDICTIONS } from "@/data/predictions";
 import { fmt } from "@/lib/format";
 import { useProgress } from "@/lib/progress";
 
@@ -11,6 +13,7 @@ const DEFAULTS = { v0: 15, angleDeg: 45, g: 9.81 };
 
 export default function ProjectileMotion() {
   const [s, setS] = useState(DEFAULTS);
+  const [pip, setPip] = useState(false);
   const { recordExperiment } = useProgress();
   const res = projectile(s);
   const set = (k) => (v) => setS((p) => ({ ...p, [k]: v }));
@@ -44,21 +47,37 @@ export default function ProjectileMotion() {
       predict={{
         experimentId: "projectile",
         label: "Projectile Motion",
-        question: "If you double the initial speed (same angle), what happens to the horizontal range?",
-        options: ["It stays the same", "It doubles", "It triples", "It quadruples"],
-        correctIndex: 3,
-        explanation: "Range scales with v₀², so doubling speed multiplies range by 4. This is why small launch-speed improvements have outsized effects on distance.",
-        computeComparison: () => {
-          const a = projectile(s);
-          const b = projectile({ ...s, v0: s.v0 * 2 });
-          return {
-            beforeLabel: `Current: v₀ = ${fmt(s.v0, 3)} m/s`, before: `R = ${fmt(a.R)} m`,
-            afterLabel: `Doubled: v₀ = ${fmt(s.v0 * 2, 3)} m/s`, after: `R = ${fmt(b.R)} m`,
-          };
-        },
+        pre: [
+          {
+            question: "If you double the initial speed (same angle), what happens to the horizontal range?",
+            options: ["It stays the same", "It doubles", "It triples", "It quadruples"],
+            correctIndex: 3,
+            explanation: "Range scales with v₀², so doubling speed multiplies range by 4. This is why small launch-speed improvements have outsized effects on distance.",
+            computeComparison: () => {
+              const a = projectile(s);
+              const b = projectile({ ...s, v0: s.v0 * 2 });
+              return {
+                beforeLabel: `Current: v₀ = ${fmt(s.v0, 3)} m/s`, before: `R = ${fmt(a.R)} m`,
+                afterLabel: `Doubled: v₀ = ${fmt(s.v0 * 2, 3)} m/s`, after: `R = ${fmt(b.R)} m`,
+              };
+            },
+          },
+          ...PREDICTIONS.projectile.pre,
+        ],
+        post: PREDICTIONS.projectile.post,
       }}
     >
-      <TrajectoryViz res={res} onPlayStarted={() => recordExperiment("projectile", "Ran Projectile Motion")} />
+      <SimPlayer
+        title="Projectile trajectory"
+        playing={pip && res.valid}
+        onDismiss={() => setPip(false)}
+        mini={<TrajectoryViz res={res} autoLoop />}
+      >
+        <TrajectoryViz
+          res={res}
+          onPlayStarted={() => { recordExperiment("projectile", "Ran Projectile Motion"); setPip(true); }}
+        />
+      </SimPlayer>
 
       <ErrorList errors={res.errors} />
 

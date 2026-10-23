@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from "
 
 // Anonymous, device-local progress tracking. No account, no personal data.
 // Everything lives in this browser's localStorage — progress does NOT sync
-// across devices or browsers.
+// across devices or browsers. Use Settings → Backup & transfer to move it.
 
 const KEY = "mechsphere-progress-v1";
 
@@ -18,8 +18,17 @@ const EMPTY = {
   review: [],               // last 25 answered questions
   recent: [],               // last 12 activities { at, label, type }
   achievements: {},         // { id: unlockedAt }
-  feedback: [],              // local-only feedback entries
   assessments: {},            // { experimentId: { pre: {...}, post: {...} } }
+};
+
+// Experiment id → lab category (for cross-category achievements).
+const EXPERIMENT_CATEGORY = {
+  projectile: "mechanics", pendulum: "mechanics", incline: "mechanics", collisions: "mechanics",
+  orbit: "mechanics", work: "mechanics", spring: "mechanics", torque: "mechanics",
+  buoyancy: "fluids", bernoulli: "fluids", hydrostatic: "fluids", venturi: "fluids",
+  heat: "thermal", conduction: "thermal", expansion: "thermal", heatcompare: "thermal",
+  gas: "gas", gasprocess: "gas",
+  ohm: "electrical", electricpower: "electrical",
 };
 
 export const ACHIEVEMENTS = [
@@ -29,14 +38,28 @@ export const ACHIEVEMENTS = [
   { id: "material-investigator", name: "Material Investigator", description: "Open 5 materials and run 1 comparison.", icon: "Layers" },
   { id: "unit-conversion-pro", name: "Unit Conversion Pro", description: "Perform 25 unit conversions.", icon: "Ruler" },
   { id: "engineering-challenger", name: "Engineering Challenger", description: "Answer 10 Engineering Challenge questions.", icon: "Trophy" },
+  { id: "first-pretest", name: "Pre-Test Pioneer", description: "Complete your first 15-question pre-test.", icon: "ClipboardCheck" },
+  { id: "full-cycle", name: "Full Learning Cycle", description: "Complete both the pre-test and the post-test for one experiment.", icon: "Repeat" },
+  { id: "score-improver", name: "Measured Improvement", description: "Score higher on a post-test than on its pre-test.", icon: "TrendingUp" },
+  { id: "category-explorer", name: "Category Explorer", description: "Run experiments in at least 3 different lab categories.", icon: "Compass" },
 ];
+
+function normalize(p) {
+  return {
+    ...EMPTY, ...p,
+    experiments: p.experiments || {},
+    predictions: { ...EMPTY.predictions, ...(p.predictions || {}) },
+    challenges: { ...EMPTY.challenges, ...(p.challenges || {}) },
+    achievements: p.achievements || {},
+    assessments: p.assessments || {},
+  };
+}
 
 function load() {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return { ...EMPTY };
-    const p = JSON.parse(raw);
-    return { ...EMPTY, ...p, experiments: p.experiments || {}, predictions: p.predictions || EMPTY.predictions, challenges: { ...EMPTY.challenges, ...(p.challenges || {}) }, achievements: p.achievements || {}, assessments: p.assessments || {} };
+    return normalize(JSON.parse(raw));
   } catch (e) {
     return { ...EMPTY };
   }
@@ -45,7 +68,6 @@ function load() {
 function computeAchievements(p) {
   const now = Date.now();
   const earned = { ...p.achievements };
-  const has = (id) => earned[id];
   const done = (id) => { if (!earned[id]) earned[id] = now; };
   const exp = p.experiments || {};
   if (Object.keys(exp).length >= 1) done("first-experiment");
@@ -54,6 +76,17 @@ function computeAchievements(p) {
   if ((p.materialsViewed || []).length >= 5 && (p.comparisons || 0) >= 1) done("material-investigator");
   if ((p.conversions || 0) >= 25) done("unit-conversion-pro");
   if ((p.challenges?.answered || 0) >= 10) done("engineering-challenger");
+
+  let fullCycle = 0, improved = 0;
+  for (const t of Object.values(p.assessments || {})) {
+    const pre = t?.pre?.latest, post = t?.post?.latest;
+    if (pre) { done("first-pretest"); if (post) { fullCycle++; if (post.score > pre.score) improved++; } }
+  }
+  if (fullCycle >= 1) done("full-cycle");
+  if (improved >= 1) done("score-improver");
+
+  const cats = new Set(Object.keys(exp).map((id) => EXPERIMENT_CATEGORY[id]).filter(Boolean));
+  if (cats.size >= 3) done("category-explorer");
   return earned;
 }
 
@@ -177,10 +210,17 @@ export function ProgressProvider({ children }) {
           return p;
         });
       },
-      addFeedback(text) {
-        update((p) => {
-          p.feedback = [{ at: Date.now(), text }, ...p.feedback].slice(0, 50);
-          return p;
+      /** Import a progress backup (validated). Throws on invalid files. */
+      importProgress(raw) {
+        if (!raw || typeof raw !== "object" || Array.isArray(raw) ||
+          typeof raw.experiments !== "object" || typeof raw.assessments !== "object" ||
+          !Array.isArray(raw.recent ?? EMPTY.recent)) {
+          throw new Error("That file is not a valid MechSphere progress backup.");
+        }
+        setProgress(() => {
+          const next = normalize(raw);
+          next.achievements = computeAchievements(next);
+          return next;
         });
       },
       resetProgress() {

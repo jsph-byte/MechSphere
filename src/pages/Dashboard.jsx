@@ -7,10 +7,11 @@ import { QUESTIONS, TOPICS } from "@/data/questions";
 import { FACTS } from "@/data/facts";
 import { todayIndex } from "@/lib/format";
 import { ACHIEVEMENTS, useProgress } from "@/lib/progress";
+import ContinueLearning from "@/components/dashboard/ContinueLearning";
 import { cn } from "@/lib/utils";
 
 const MODULES = [
-  { to: "/lab", label: "Experiment Lab", desc: "Five interactive physics simulations", icon: FlaskConical, accent: "text-orange-400" },
+  { to: "/lab", label: "Experiment Lab", desc: "20 interactive engineering simulations", icon: FlaskConical, accent: "text-orange-400" },
   { to: "/materials", label: "Material Explorer", desc: "Referenced property library & comparison", icon: Layers, accent: "text-cyan-400" },
   { to: "/toolkit", label: "Engineering Toolkit", desc: "Units, dimensions & constants", icon: Wrench, accent: "text-orange-400" },
   { to: "/challenge", label: "Engineering Challenge", desc: "Curated practice questions", icon: Trophy, accent: "text-cyan-400" },
@@ -119,6 +120,8 @@ export default function Dashboard() {
           ))}
         </section>
       )}
+
+      <ContinueLearning />
 
       {/* Module cards */}
       <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

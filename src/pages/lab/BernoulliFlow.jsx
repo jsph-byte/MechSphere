@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import ExperimentShell, { Stat, ErrorList } from "@/components/experiments/ExperimentShell";
 import ControlSlider from "@/components/experiments/ControlSlider";
 import BernoulliViz from "@/components/experiments/BernoulliViz";
-import AssessmentPanel from "@/components/assessments/AssessmentPanel";
+import { preTest as bernoulliPre, postTest as bernoulliPost } from "@/data/assessments/bernoulli";
 import { pipeFlow } from "@/lib/physics";
 import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart";
 import { fmt } from "@/lib/format";
@@ -82,17 +82,23 @@ export default function BernoulliFlow() {
       predict={{
         experimentId: "bernoulli",
         label: "Bernoulli Flow Lab",
-        question: "The volume flow rate stays constant while the fluid enters the narrower section. Its speed in the narrow section will…",
-        options: ["Increase", "Decrease", "Stay the same", "Drop to zero"],
-        correctIndex: 0,
-        explanation:
-          "Continuity: Q = A·v is fixed, so a smaller cross-sectional area A must be matched by a larger speed v. Bernoulli then trades that speed for lower pressure.",
-        computeComparison: () => ({
-          beforeLabel: `Wide section (d₁ = ${fmt(s.d1cm)} cm)`,
-          before: `v₁ = ${fmt(res.v1)} m/s`,
-          afterLabel: `Narrow section (d₂ = ${fmt(s.d2cm)} cm)`,
-          after: `v₂ = ${fmt(res.v2)} m/s`,
-        }),
+        pre: [
+          {
+            question: "The volume flow rate stays constant while the fluid enters the narrower section. Its speed in the narrow section will…",
+            options: ["Increase", "Decrease", "Stay the same", "Drop to zero"],
+            correctIndex: 0,
+            explanation:
+              "Continuity: Q = A·v is fixed, so a smaller cross-sectional area A must be matched by a larger speed v. Bernoulli then trades that speed for lower pressure.",
+            computeComparison: () => ({
+              beforeLabel: `Wide section (d₁ = ${fmt(s.d1cm)} cm)`,
+              before: `v₁ = ${fmt(res.v1)} m/s`,
+              afterLabel: `Narrow section (d₂ = ${fmt(s.d2cm)} cm)`,
+              after: `v₂ = ${fmt(res.v2)} m/s`,
+            }),
+          },
+          ...bernoulliPre,
+        ],
+        post: bernoulliPost,
       }}
     >
       <ErrorList errors={res.errors} />
@@ -153,7 +159,6 @@ export default function BernoulliFlow() {
         series={[{ key: "P2", name: "Pressure P₂ (kPa, gauge)", color: "#f97316" }]}
       />
 
-      <AssessmentPanel experimentId="bernoulli" />
     </ExperimentShell>
   );
 }

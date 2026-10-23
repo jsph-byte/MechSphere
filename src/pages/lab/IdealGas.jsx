@@ -4,6 +4,7 @@ import ControlSlider from "@/components/experiments/ControlSlider";
 import GasViz from "@/components/experiments/GasViz";
 import { gasLaw, cToK, kToC } from "@/lib/physics";
 import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart";
+import { PREDICTIONS } from "@/data/predictions";
 import { fmt } from "@/lib/format";
 import { useProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";
@@ -60,14 +61,20 @@ export default function IdealGas() {
       predict={{
         experimentId: "gas",
         label: "Ideal Gas",
-        question: "At constant temperature, you slowly compress the gas to half its volume. What happens to the pressure?",
-        options: ["It stays the same", "It halves", "It doubles", "It quadruples"],
-        correctIndex: 2,
-        explanation: "Boyle's law: with T fixed, P ∝ 1/V, so halving the volume doubles the pressure. The comparison below uses your current state 1 values.",
-        computeComparison: () => ({
-          beforeLabel: `Current: V = ${fmt(s.v1)} L`, before: `P = ${fmt(s.p1)} kPa`,
-          afterLabel: `Compressed: V = ${fmt(s.v1 / 2)} L`, after: `P = ${fmt(s.p1 * 2)} kPa`,
-        }),
+        pre: [
+          {
+            question: "At constant temperature, you slowly compress the gas to half its volume. What happens to the pressure?",
+            options: ["It stays the same", "It halves", "It doubles", "It quadruples"],
+            correctIndex: 2,
+            explanation: "Boyle's law: with T fixed, P ∝ 1/V, so halving the volume doubles the pressure. The comparison uses your current state 1 values.",
+            computeComparison: () => ({
+              beforeLabel: `Current: V = ${fmt(s.v1)} L`, before: `P = ${fmt(s.p1)} kPa`,
+              afterLabel: `Compressed: V = ${fmt(s.v1 / 2)} L`, after: `P = ${fmt(s.p1 * 2)} kPa`,
+            }),
+          },
+          ...PREDICTIONS.gas.pre,
+        ],
+        post: PREDICTIONS.gas.post,
       }}
     >
       <GasViz

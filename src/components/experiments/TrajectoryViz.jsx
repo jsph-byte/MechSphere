@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { Play, RotateCcw } from "lucide-react";
 import { fmt } from "@/lib/format";
 
-/** Animated ideal-projectile trajectory with live marker. Pure SVG, deterministic. */
-export default function TrajectoryViz({ res, onPlayStarted }) {
+/** Animated ideal-projectile trajectory with live marker. Pure SVG, deterministic.
+ *  autoLoop: used by the floating mini-player — start on mount and loop forever. */
+export default function TrajectoryViz({ res, onPlayStarted, autoLoop = false }) {
   const [playing, setPlaying] = useState(false);
   const [t, setT] = useState(0);
   const tRef = useRef(0);
@@ -16,13 +17,20 @@ export default function TrajectoryViz({ res, onPlayStarted }) {
       const dt = (now - last) / 1000;
       last = now;
       tRef.current += dt;
-      if (tRef.current >= res.t) { tRef.current = res.t; setT(res.t); setPlaying(false); return; }
+      if (tRef.current >= res.t) {
+        if (autoLoop) { tRef.current = 0; setT(0); }
+        else { tRef.current = res.t; setT(res.t); setPlaying(false); return; }
+      }
       setT(tRef.current);
       id = requestAnimationFrame(step);
     };
     id = requestAnimationFrame(step);
     return () => cancelAnimationFrame(id);
-  }, [playing, res.t, res.valid]);
+  }, [playing, res.t, res.valid, autoLoop]);
+
+  useEffect(() => {
+    if (autoLoop && res.valid) { tRef.current = 0; setT(0); setPlaying(true); }
+  }, [autoLoop, res.valid]);
 
   if (!res.valid) {
     return (

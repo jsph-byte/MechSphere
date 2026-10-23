@@ -4,6 +4,8 @@ import ControlSlider from "@/components/experiments/ControlSlider";
 import PendulumViz from "@/components/experiments/PendulumViz";
 import { pendulum } from "@/lib/physics";
 import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart";
+import SimPlayer from "@/components/experiments/SimPlayer";
+import { PREDICTIONS } from "@/data/predictions";
 import { fmt } from "@/lib/format";
 import { useProgress } from "@/lib/progress";
 
@@ -11,6 +13,7 @@ const DEFAULTS = { length: 1.0, angleDeg: 20 };
 
 export default function SimplePendulum() {
   const [s, setS] = useState(DEFAULTS);
+  const [pip, setPip] = useState(false);
   const { recordExperiment } = useProgress();
   const res = pendulum(s);
   const set = (k) => (v) => setS((p) => ({ ...p, [k]: v }));
@@ -40,26 +43,39 @@ export default function SimplePendulum() {
       predict={{
         experimentId: "pendulum",
         label: "Simple Pendulum",
-        question: "If you quadruple the pendulum length, what happens to its period?",
-        options: ["It stays the same", "It doubles", "It quadruples", "It halves"],
-        correctIndex: 1,
-        explanation: "T ∝ √L, so L × 4 gives T × 2. To double a pendulum clock's tick you need four times the length.",
-        computeComparison: () => {
-          const a = pendulum({ ...s });
-          const b = pendulum({ ...s, length: s.length * 4 });
-          return {
-            beforeLabel: `Current: L = ${fmt(s.length)} m`, before: `T ≈ ${fmt(a.T)} s`,
-            afterLabel: `Quadrupled: L = ${fmt(s.length * 4)} m`, after: `T ≈ ${fmt(b.T)} s`,
-          };
-        },
+        pre: [
+          {
+            question: "If you quadruple the pendulum length, what happens to its period?",
+            options: ["It stays the same", "It doubles", "It quadruples", "It halves"],
+            correctIndex: 1,
+            explanation: "T ∝ √L, so L × 4 gives T × 2. To double a pendulum clock's tick you need four times the length.",
+            computeComparison: () => {
+              const a = pendulum({ ...s });
+              const b = pendulum({ ...s, length: s.length * 4 });
+              return {
+                beforeLabel: `Current: L = ${fmt(s.length)} m`, before: `T ≈ ${fmt(a.T)} s`,
+                afterLabel: `Quadrupled: L = ${fmt(s.length * 4)} m`, after: `T ≈ ${fmt(b.T)} s`,
+              };
+            },
+          },
+          ...PREDICTIONS.pendulum.pre,
+        ],
+        post: PREDICTIONS.pendulum.post,
       }}
     >
-      <PendulumViz
-        length={res.valid ? s.length : 1}
-        angleDeg={s.angleDeg}
-        period={res.valid ? res.T : 1}
-        onPlayStarted={() => recordExperiment("pendulum", "Ran Simple Pendulum")}
-      />
+      <SimPlayer
+        title="Pendulum swing"
+        playing={pip}
+        onDismiss={() => setPip(false)}
+        mini={<PendulumViz length={res.valid ? s.length : 1} angleDeg={s.angleDeg} period={res.valid ? res.T : 1} autoLoop />}
+      >
+        <PendulumViz
+          length={res.valid ? s.length : 1}
+          angleDeg={s.angleDeg}
+          period={res.valid ? res.T : 1}
+          onPlayStarted={() => { recordExperiment("pendulum", "Ran Simple Pendulum"); setPip(true); }}
+        />
+      </SimPlayer>
       <ErrorList errors={res.errors} />
 
       {largeAngle && (

@@ -2,8 +2,9 @@ import React, { useEffect, useRef, useState } from "react";
 import { Play, Pause } from "lucide-react";
 import { fmt } from "@/lib/format";
 
-/** Animated pendulum. Angle model: θ(t) = θ0·cos(2π·t/T) (small-angle model). */
-export default function PendulumViz({ length, angleDeg, period, onPlayStarted }) {
+/** Animated pendulum. Angle model: θ(t) = θ0·cos(2π·t/T) (small-angle model).
+ *  autoLoop: used by the floating mini-player — start on mount. */
+export default function PendulumViz({ length, angleDeg, period, onPlayStarted, autoLoop = false }) {
   const [playing, setPlaying] = useState(false);
   const [t, setT] = useState(0);
   const tRef = useRef(0);
@@ -22,6 +23,10 @@ export default function PendulumViz({ length, angleDeg, period, onPlayStarted })
     id = requestAnimationFrame(step);
     return () => cancelAnimationFrame(id);
   }, [playing]);
+
+  useEffect(() => {
+    if (autoLoop) setPlaying(true);
+  }, [autoLoop]);
 
   const thetaNow = angleDeg * Math.cos((2 * Math.PI * t) / (period || 1)) * (Math.PI / 180);
   const W = 400, H = 250, pivotX = W / 2, pivotY = 26, rodPx = 190;
