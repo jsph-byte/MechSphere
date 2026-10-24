@@ -40,12 +40,14 @@ export default function ContinueLearning() {
     if (!meta) continue;
     const t = progress.assessments?.[id] || {};
     if (!t.pre?.latest) {
-      items.push({
-        key: `${id}-pre`,
-        label: `Take the pre-test for ${meta.title}`,
-        sub: "You ran the experiment — complete the learning cycle",
-        to: `/lab/assessment/${id}/pre`,
-      });
+      if (!t.pre?.draft) {
+        items.push({
+          key: `${id}-pre`,
+          label: `Take the pre-test for ${meta.title}`,
+          sub: "You ran the experiment — complete the learning cycle",
+          to: `/lab/assessment/${id}/pre`,
+        });
+      }
     } else if (!t.post?.latest) {
       items.push({
         key: `${id}-post`,

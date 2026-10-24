@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import ExperimentShell, { Stat, ErrorList } from "@/components/experiments/ExperimentShell";
+import ExperimentShell, { ErrorList } from "@/components/experiments/ExperimentShell";
 import ControlSlider from "@/components/experiments/ControlSlider";
 import GasViz from "@/components/experiments/GasViz";
 import { gasLaw, cToK, kToC } from "@/lib/physics";

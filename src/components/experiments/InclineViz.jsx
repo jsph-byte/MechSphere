@@ -67,7 +67,6 @@ export default function InclineViz({ angleDeg, res, onPlayStarted, autoLoop = fa
   };
 
   // directions in screen space
-  const downPlane = { dx: -Math.cos(th), dy: Math.sin(th) };   // toward corner (down the plane)
   const upPlane = { dx: Math.cos(th), dy: -Math.sin(th) };     // friction opposes sliding
   const intoNormal = { dx: Math.sin(th), dy: Math.cos(th) };   // away from surface (outward normal)
 
@@ -97,7 +96,7 @@ export default function InclineViz({ angleDeg, res, onPlayStarted, autoLoop = fa
           {/* block */}
           <rect x={bx - 16} y={by - 10} width="32" height="22" rx="3" transform={`rotate(${angleDeg} ${bx} ${by})`} fill="currentColor" className="text-orange-500" />
           {/* vectors */}
-          {arrow(bx, by, 0, 52, "var(--color-orange, #f97316)", `W = ${fmt(res.weight)} N`)}
+          {arrow(bx, by, 0, 52, "#f97316", `W = ${fmt(res.weight)} N`)}
           {arrow(bx, by, intoNormal.dx * 46, -intoNormal.dy * 46, "#06b6d4", `N = ${fmt(res.normal)} N`)}
           {res.friction > 0 && arrow(bx, by, upPlane.dx * 38, upPlane.dy * 38, "#a1a1aa", `f = ${fmt(res.friction)} N`)}
         </svg>

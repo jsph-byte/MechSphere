@@ -7,7 +7,6 @@ import ExperimentChart, { sweep } from "@/components/experiments/ExperimentChart
 import { PREDICTIONS } from "@/data/predictions";
 import { fmt } from "@/lib/format";
 import { useProgress } from "@/lib/progress";
-import { MATERIALS } from "@/data/materials";
 import { cn } from "@/lib/utils";
 
 const SAND = {

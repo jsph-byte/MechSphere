@@ -3,7 +3,7 @@ import { ArrowLeftRight, Copy, Check, Search, X, History } from "lucide-react";
 import EquationChecker from "@/components/toolkit/EquationChecker";
 import QuantityComparison from "@/components/toolkit/QuantityComparison";
 import { UNIT_CATEGORIES, convert } from "@/lib/units";
-import { fmt, todayIndex } from "@/lib/format";
+import { fmt } from "@/lib/format";
 import { CONSTANTS } from "@/data/constants";
 import { useProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";

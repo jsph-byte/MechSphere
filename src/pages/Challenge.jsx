@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, Check, X, RefreshCw, BookOpen, Trophy } from "lucide-react";
 import { QUESTIONS, TOPICS, DIFFICULTIES } from "@/data/questions";
-import { fmt, todayIndex } from "@/lib/format";
+import { fmt } from "@/lib/format";
 import { useProgress } from "@/lib/progress";
 import { cn } from "@/lib/utils";
 
@@ -186,7 +186,7 @@ export default function Challenge() {
       {session && !session.finished && (
         <div className="space-y-4">
           <div className="flex items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-xs font-semibold">
-            <span className="text-muted-foreground">Score: <span className="text-cyan-400">{session.score}</span> / {session.idx + (lastAnswer ? 1 : 0)}</span>
+            <span className="text-muted-foreground">Score: <span className="text-cyan-400">{session.score}</span> / {Math.max(1, session.idx + (lastAnswer ? 1 : 0))}</span>
             <span className="text-muted-foreground">Streak: <span className="text-orange-400">{session.streak}</span></span>
           </div>
           <QuestionCard key={session.idx} q={session.questions[session.idx]} index={session.idx} total={session.questions.length} streak={session.streak} onAnswered={handleAnswered} />

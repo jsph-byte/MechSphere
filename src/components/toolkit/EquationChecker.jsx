@@ -43,6 +43,7 @@ function evalTerms(terms) {
     } else if (!dimsEqual(d, dims)) {
       return {
         error: `Cannot ${term.op === "+" ? "add" : "subtract"} term ${ti + 1} (“${label}”, [${dimsString(d)}]) to term 1 (“${steps[0].label}”, [${dimsString(dims)}]) — only quantities with matching dimensions can be added or subtracted.`,
+        steps: [...steps, { label, dims: d, failed: true }],
       };
     } else {
       steps.push({ label, dims: d });
@@ -95,7 +96,11 @@ export default function EquationChecker() {
     const lhsDims = lhsQ ? scaleDims(lhsQ.dims, state.lhs.pow) : [...ZERO_DIMS];
     const rhs = evalTerms(state.rhsTerms);
     if (rhs.error) {
-      return { ok: false, headline: "Dimensionally inconsistent", lhsDims, lhsQ, steps: rhs.steps, detail: rhs.error };
+      return {
+        ok: false,
+        headline: state.useEquals ? "Dimensionally inconsistent" : "Invalid expression",
+        lhsDims, lhsQ, steps: rhs.steps, detail: rhs.error, rhsInvalid: true,
+      };
     }
     if (!state.useEquals) {
       return { ok: true, headline: "Expression evaluated", lhsDims, lhsQ, steps: rhs.steps, rhsDims: rhs.dims, expressionOnly: true };
@@ -262,7 +267,14 @@ export default function EquationChecker() {
               {lhsPreview} → [{dimsString(result.lhsDims)}]
             </div>
           </div>
-          {!result.expressionOnly && (
+          {result.rhsInvalid ? (
+            <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-3">
+              <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Right side</div>
+              <div className="mt-0.5 text-sm font-medium text-destructive">
+                cannot be evaluated — its terms have different dimensions
+              </div>
+            </div>
+          ) : !result.expressionOnly && (
             <div className="rounded-lg border border-border bg-card p-3">
               <div className="text-[11px] uppercase tracking-wide text-muted-foreground">Right side</div>
               <div className="mt-0.5 font-mono text-sm">→ [{dimsString(result.rhsDims)}]</div>
@@ -274,8 +286,14 @@ export default function EquationChecker() {
           <div className="mb-1 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">Intermediate dimensional steps</div>
           <ul className="space-y-1">
             {result.steps.map((s, i) => (
-              <li key={i} className="rounded-lg border border-border bg-card px-3 py-1.5 font-mono text-xs">
-                Term {i + 1}: {s.label} → [{dimsString(s.dims)}]
+              <li
+                key={i}
+                className={cn(
+                  "rounded-lg border px-3 py-1.5 font-mono text-xs",
+                  s.failed ? "border-destructive/50 bg-destructive/5 text-destructive" : "border-border bg-card"
+                )}
+              >
+                Term {i + 1}: {s.label} → [{dimsString(s.dims)}]{s.failed ? "  ✕ mismatched" : ""}
               </li>
             ))}
           </ul>

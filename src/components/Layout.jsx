@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { NavLink, Outlet, Link } from "react-router-dom";
 import {
   LayoutDashboard, FlaskConical, Layers, Wrench, Trophy, Award, Settings,
-  Sun, Moon, Menu, X, Wifi, WifiOff,
+  Sun, Moon, Menu, X, WifiOff,
 } from "lucide-react";
 import { useTheme } from "@/lib/theme";
 import { cn } from "@/lib/utils";

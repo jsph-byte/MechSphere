@@ -5,6 +5,7 @@ import { conduction } from "@/lib/physics";
 import { fmt } from "@/lib/format";
 import { useProgress } from "@/lib/progress";
 import { PREDICTIONS } from "@/data/predictions";
+import HeatModesPanel from "@/components/experiments/HeatModesPanel";
 
 // Typical ~300 K conductivities (Incropera et al.) — same reference set as the Conduction lab.
 const MATERIALS_K = [
@@ -96,6 +97,8 @@ export default function HeatTransferComparison() {
         <Stat label="Slowest: foam q" value={fmt(slowest.q)} unit="W" accent="cyan" />
         <Stat label="Conduction ratio copper : foam" value={fmt(fastest.q / slowest.q)} unit="×" accent="orange" />
       </div>
+
+      <HeatModesPanel />
     </ExperimentShell>
   );
 }
